@@ -74,10 +74,25 @@
         /* --- INTRO VIEW --- */
         #view-intro { 
             background: var(--bg-intro); 
-            padding: 40px 24px 50px 24px; 
+            padding: 24px 24px 50px 24px; 
             justify-content: space-between; 
             min-height: 100%;
         }
+        
+        /* Intro Ambience Toggle */
+        .intro-header {
+            width: 100%; display: flex; justify-content: flex-end; margin-bottom: 10px;
+        }
+        .bg-music-toggle {
+            background: rgba(0,0,0,0.06); border: none; padding: 8px 14px; 
+            border-radius: 20px; display: flex; align-items: center; gap: 6px; 
+            color: var(--text-dark); font-weight: 600; font-size: 0.8rem; 
+            cursor: pointer; transition: transform 0.2s, background 0.3s;
+        }
+        .bg-music-toggle:active { transform: scale(0.92); }
+        .bg-music-toggle:hover { background: rgba(0,0,0,0.1); }
+        .bg-music-toggle svg { width: 16px; height: 16px; }
+
         .intro-img-container { 
             flex: 1; display: flex; align-items: center; justify-content: center; 
             min-height: 200px; margin-bottom: 20px;
@@ -103,7 +118,6 @@
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .header h1 { color: var(--text-dark); font-size: 2rem; }
         
-        /* Brilliant Lyrics Language Toggle Button */
         .lang-toggle {
             background: var(--bg-white); color: var(--text-dark);
             border: 1px solid rgba(0,0,0,0.08); padding: 8px 14px; border-radius: 30px;
@@ -295,7 +309,15 @@
         
         <!-- INTRO VIEW -->
         <div id="view-intro" class="view">
-            <div style="height: 20px; flex-shrink: 0;"></div>
+            <!-- Ambience Control Button -->
+            <div class="intro-header">
+                <button class="bg-music-toggle" id="btn-intro-music">
+                    <svg id="icon-vol-on" style="display:none;" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                    <svg id="icon-vol-off" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                    <span>Ambience</span>
+                </button>
+            </div>
+            
             <div class="intro-img-container">
                 <img src="illustration.jpg" alt="Illustration">
             </div>
@@ -313,7 +335,6 @@
                 <div class="header" id="lib-header">
                     <h1 id="list-title-text">Library</h1>
                     
-                    <!-- Highly clear Lyrics Mode Button -->
                     <button id="btn-lang-toggle" class="lang-toggle">
                         <svg viewBox="0 0 24 24"><path d="M14 17H4v2h10v-2zm6-8H4v2h16V9zM4 15h16v-2H4v2zM4 5v2h16V5H4z"/></svg>
                         <span id="lang-btn-text">Lyrics: Both</span>
@@ -404,7 +425,8 @@
 
     </div>
 
-    <audio id="audio-intro" src="intro.mp3"></audio>
+    <!-- Intro set to loop natively -->
+    <audio id="audio-intro" src="intro.mp3" loop></audio>
     <audio id="audio-main"></audio>
 
     <script>
@@ -417,11 +439,8 @@
         let currentIdx = 0;
         let currentLyrics = [];
         let currentFetchId = 0; 
-        
-        // Lock flag that prevents DOM layout thrashing (The White Screen Fix)
         let isTransitioning = false;
         
-        // --- State Management ---
         let currentFilter = "";
         let showFavoritesOnly = false;
 
@@ -472,14 +491,16 @@
 
                 loader.style.display = 'none';
                 initDynamicCards();
+                
+                // Only render standard library if a direct link wasn't opened
                 if(!checkURLParams()) renderLibrary();
+
             } catch (error) {
                 console.error(error);
                 loader.innerText = "Error loading files. Ensure repo is public.";
             }
         }
 
-        // --- Smart Alive Cards ---
         let recentIdx = -1;
         let suggestedIdx = -1;
 
@@ -502,12 +523,26 @@
             }
         }
 
+        // --- Robust Direct URL Router ---
         function checkURLParams() {
             const params = new URLSearchParams(window.location.search);
             const trackFile = params.get('track');
             if (trackFile) {
-                const idx = playlist.findIndex(t => t.baseName + '.mp3' === trackFile || t.baseName === trackFile);
+                // Normalize URL parameter (removes .mp3, converts hyphens to spaces, all lowercase)
+                const searchTarget = trackFile.replace('.mp3', '').replace(/-/g, ' ').toLowerCase();
+                
+                const idx = playlist.findIndex(t => {
+                    // Normalize the database name the exact same way for a flawless match
+                    const cleanBase = t.baseName.replace(/-/g, ' ').toLowerCase();
+                    return cleanBase === searchTarget;
+                });
+                
                 if (idx !== -1) {
+                    // Setup UI silently for professional entry
+                    vIntro.classList.add('hidden-left');
+                    vLib.classList.add('hidden-left');
+                    
+                    renderLibrary(); // Render list in background so the back button works seamlessly
                     openPlayer(idx);
                     return true;
                 }
@@ -515,46 +550,56 @@
             return false;
         }
 
-        // --- Audio Core & Logic ---
+        // --- Audio Core & Intro Logic ---
         const audioMain = document.getElementById('audio-main');
         const audioIntro = document.getElementById('audio-intro');
-        audioIntro.volume = 0; // Starts at 0 for fade in
+        audioIntro.volume = 1; 
 
-        function stopIntro() {
-            audioIntro.pause();
-            audioIntro.currentTime = 0;
+        // Attempt autoplay on load (Browsers may block this)
+        window.addEventListener('DOMContentLoaded', () => {
+            audioIntro.play().catch(e => console.log('Autoplay blocked. Awaiting user interaction.'));
+        });
+
+        // Intro Button Toggle Logic
+        const btnIntroMusic = document.getElementById('btn-intro-music');
+        const iconVolOn = document.getElementById('icon-vol-on');
+        const iconVolOff = document.getElementById('icon-vol-off');
+
+        function syncIntroIcons() {
+            if (audioIntro.paused) {
+                iconVolOn.style.display = 'none';
+                iconVolOff.style.display = 'block';
+            } else {
+                iconVolOn.style.display = 'block';
+                iconVolOff.style.display = 'none';
+            }
         }
 
-        // Brilliant Custom Fade & Loop Engine for Intro
-        audioIntro.addEventListener('timeupdate', () => {
-            if (audioIntro.paused || !audioIntro.duration) return;
-            const fadeTime = 2.0; 
-            const rem = audioIntro.duration - audioIntro.currentTime;
-            
-            if (rem <= fadeTime && rem > 0) {
-                audioIntro.volume = Math.max(0, rem / fadeTime);
-            } else if (audioIntro.currentTime <= fadeTime) {
-                audioIntro.volume = Math.min(1, audioIntro.currentTime / fadeTime);
-            } else {
-                audioIntro.volume = 1;
-            }
+        audioIntro.addEventListener('play', syncIntroIcons);
+        audioIntro.addEventListener('pause', syncIntroIcons);
+
+        btnIntroMusic.addEventListener('click', () => {
+            if (audioIntro.paused) audioIntro.play().catch(()=>{});
+            else audioIntro.pause();
         });
 
-        audioIntro.addEventListener('ended', () => {
-            audioIntro.currentTime = 0;
-            audioIntro.play().catch(e => console.log('Intro loop prevented'));
-        });
-
-        // Trigger intro gently on first click anywhere if home screen is visible
-        let hasInteracted = false;
-        document.body.addEventListener('click', () => {
-            if (!hasInteracted && !document.getElementById('view-intro').classList.contains('hidden-left')) {
-                hasInteracted = true;
-                if (audioMain.paused || audioMain.src === "") {
-                    audioIntro.play().catch(()=>{});
+        // Professional Cinematic Fade-Out
+        function fadeOutIntro() {
+            if (audioIntro.paused) return;
+            let vol = audioIntro.volume;
+            // Gradually reduce volume every 30ms
+            const fadeInterval = setInterval(() => {
+                if (vol > 0.05) {
+                    vol -= 0.05;
+                    audioIntro.volume = vol;
+                } else {
+                    clearInterval(fadeInterval);
+                    audioIntro.pause();
+                    audioIntro.currentTime = 0; 
+                    audioIntro.volume = 1; // Reset volume back to max for next time
                 }
-            }
-        }, {once: true});
+            }, 30); 
+        }
 
         // --- Navigation ---
         const vIntro = document.getElementById('view-intro');
@@ -563,7 +608,7 @@
         const searchInput = document.getElementById('search-input');
         
         document.getElementById('btn-start').addEventListener('click', () => {
-            stopIntro(); 
+            fadeOutIntro(); // Smooth cinematic fade out
             vIntro.classList.add('hidden-left');
             vLib.classList.remove('hidden-right');
             if (playlist.length === 0) scanGitHubRepo();
@@ -581,7 +626,7 @@
             vIntro.classList.remove('hidden-left');
             updateBottomNav('nav-home');
             
-            // Only play intro if main aarti is completely silent
+            // Only resume ambience if main aarti is completely silent
             if (audioMain.paused || audioMain.src === "") {
                 audioIntro.currentTime = 0; 
                 audioIntro.play().catch(() => {});
@@ -617,7 +662,6 @@
             renderLibrary();
         });
 
-        // --- Language Toggle Logic ---
         const btnLangToggle = document.getElementById('btn-lang-toggle');
         const spanLangText = document.getElementById('lang-btn-text');
         const langLabels = { 'both': 'Lyrics: Both', 'hindi': 'Lyrics: Hindi', 'hinglish': 'Lyrics: English' };
@@ -637,7 +681,6 @@
             }
         });
 
-        // --- Rendering Library Engine ---
         const trackList = document.getElementById('track-list-container');
         
         function renderLibrary() {
@@ -718,15 +761,10 @@
             refreshLibraryUI(); 
         });
 
-        // --- Master Player UI Animation Function ---
         function openPlayerView() {
-            // Lock UI Layout Updates to fix the White Screen bug!
             isTransitioning = true;
-            
             vLib.classList.add('hidden-left');
             vPlayer.classList.remove('hidden-right');
-            
-            // Wait for 450ms (the CSS slide takes 400ms) before unlocking and snapping UI
             setTimeout(() => {
                 isTransitioning = false;
                 updatePlayerUI(); 
@@ -744,9 +782,8 @@
         });
 
         async function openPlayer(index) {
-            stopIntro(); 
+            fadeOutIntro(); // Smooth cinematic fade out
             
-            // If already playing this track, trigger safe animation slide
             if (currentIdx === index && audioMain.src !== "") {
                 openPlayerView();
                 return; 
@@ -795,7 +832,6 @@
             syncPlayerFavIcon();
         });
 
-        // --- Intelligent Lyrics Engine ---
         async function fetchLyrics(baseName) {
             const myFetchId = ++currentFetchId;
             const lyricsDiv = document.getElementById('lyrics-display');
@@ -863,7 +899,6 @@
             if (!isTransitioning) updatePlayerUI(); 
         }
 
-        // --- Controls & Scrubber ---
         const btnPlay = document.getElementById('btn-play');
         const iconPlay = document.getElementById('icon-play');
         const iconPause = document.getElementById('icon-pause');
@@ -912,9 +947,7 @@
             tTot.innerText = fmt(audioMain.duration);
         });
 
-        // The Master UI Sync Function
         function updatePlayerUI() {
-            // Absolute Lock: Don't execute DOM logic if hidden or sliding
             if (!audioMain.duration || vPlayer.classList.contains('hidden-right') || isTransitioning) return;
             
             tCurr.innerText = fmt(audioMain.currentTime);
