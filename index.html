@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Mummy's Aarti</title>
+    
+    <!-- Professional Social Meta Tags (OG Tags) -->
+    <title>Tusic</title>
+    <meta name="description" content="A tiny music player that stores the voice of your loved ones ❤️">
+    <meta property="og:title" content="Tusic" />
+    <meta property="og:description" content="A tiny music player that stores the voice of your loved ones ❤️" />
+    <meta property="og:image" content="https://raw.githubusercontent.com/unskyit/aarti/refs/heads/main/bannertusic.jpg" />
+    <meta property="og:type" content="website" />
+    
+    <!-- Heart Emoji Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>❤️</text></svg>">
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -93,11 +104,17 @@
         .bg-music-toggle:hover { background: rgba(0,0,0,0.1); }
         .bg-music-toggle svg { width: 16px; height: 16px; }
 
+        /* 5 Photos Slideshow Support */
         .intro-img-container { 
             flex: 1; display: flex; align-items: center; justify-content: center; 
-            min-height: 200px; margin-bottom: 20px;
+            min-height: 200px; margin-bottom: 20px; position: relative;
         }
-        .intro-img-container img { max-width: 90%; max-height: 300px; object-fit: contain; }
+        .slideshow-img { 
+            position: absolute; max-width: 90%; max-height: 300px; object-fit: contain; 
+            opacity: 0; transition: opacity 1.5s ease-in-out; 
+        }
+        .slideshow-img.active { opacity: 1; }
+
         .intro-text { flex-shrink: 0; }
         .intro-text h1 { color: var(--text-dark); font-size: clamp(1.8rem, 6vw, 2.2rem); font-weight: 700; margin-bottom: 12px; }
         .intro-text p { color: var(--text-dark); opacity: 0.8; font-size: 1rem; line-height: 1.5; margin-bottom: 30px; }
@@ -118,9 +135,11 @@
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .header h1 { color: var(--text-dark); font-size: 2rem; }
         
+        .header-actions { display: flex; gap: 8px; }
+
         .lang-toggle {
             background: var(--bg-white); color: var(--text-dark);
-            border: 1px solid rgba(0,0,0,0.08); padding: 8px 14px; border-radius: 30px;
+            border: 1px solid rgba(0,0,0,0.08); padding: 8px 12px; border-radius: 30px;
             font-size: 0.8rem; font-weight: 600; cursor: pointer;
             display: flex; align-items: center; gap: 6px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.03); transition: transform 0.2s, background 0.3s;
@@ -203,6 +222,14 @@
         .icon-list-pause { display: none; }
         .track-item.is-playing .icon-list-play { display: none; }
         .track-item.is-playing .icon-list-pause { display: block; }
+
+        /* Reorder Arrows */
+        .reorder-controls { display: none; gap: 4px; flex-shrink: 0; }
+        .reorder-btn { background: var(--bg-outer); border: none; border-radius: 8px; padding: 6px; display: flex; align-items: center; justify-content: center; color: var(--text-dark); cursor: pointer; transition: background 0.2s; }
+        .reorder-btn:hover { background: #dce1e8; }
+        .reorder-btn svg { width: 18px; height: 18px; }
+        .is-editing .play-arrow { display: none !important; }
+        .is-editing .reorder-controls { display: flex !important; }
 
         .track-item-left { display: flex; align-items: center; gap: 16px; text-align: left; flex: 1; overflow: hidden; }
         .track-icon { 
@@ -318,12 +345,18 @@
                 </button>
             </div>
             
-            <div class="intro-img-container">
-                <img src="illustration.jpg" alt="Illustration">
+            <!-- Beautiful 5-Photo Auto-Fading Slideshow -->
+            <div class="intro-img-container" id="slideshow-container">
+                <img class="slideshow-img active" src="photo1.jpg" onerror="this.src='illustration.jpg'">
+                <img class="slideshow-img" src="photo2.jpg" onerror="this.style.display='none'">
+                <img class="slideshow-img" src="photo3.jpg" onerror="this.style.display='none'">
+                <img class="slideshow-img" src="photo4.jpg" onerror="this.style.display='none'">
+                <img class="slideshow-img" src="photo5.jpg" onerror="this.style.display='none'">
             </div>
+            
             <div class="intro-text">
-                <h1>Mummy's Aarti</h1>
-                <p>A beautiful collection of Aarti tracks and bhajans, strictly for you.</p>
+                <h1>Tusic</h1>
+                <p>A tiny music player that stores the voice of your loved ones ❤️</p>
                 <button class="btn-start" id="btn-start">Listen Now</button>
             </div>
         </div>
@@ -335,10 +368,18 @@
                 <div class="header" id="lib-header">
                     <h1 id="list-title-text">Library</h1>
                     
-                    <button id="btn-lang-toggle" class="lang-toggle">
-                        <svg viewBox="0 0 24 24"><path d="M14 17H4v2h10v-2zm6-8H4v2h16V9zM4 15h16v-2H4v2zM4 5v2h16V5H4z"/></svg>
-                        <span id="lang-btn-text">Lyrics: Both</span>
-                    </button>
+                    <div class="header-actions">
+                        <!-- Custom Sort Button -->
+                        <button id="btn-reorder-toggle" class="lang-toggle" title="Arrange Tracks">
+                            <svg viewBox="0 0 24 24"><path d="M7 10l5-5 5 5H7zm10 4l-5 5-5-5h10z"/></svg>
+                            <span id="reorder-btn-text">Sort</span>
+                        </button>
+                        
+                        <button id="btn-lang-toggle" class="lang-toggle">
+                            <svg viewBox="0 0 24 24"><path d="M14 17H4v2h10v-2zm6-8H4v2h16V9zM4 15h16v-2H4v2zM4 5v2h16V5H4z"/></svg>
+                            <span id="lang-btn-text">Both</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="search-bar">
@@ -371,10 +412,13 @@
                 <div class="track-list" id="track-list-container"></div>
             </div>
 
-            <!-- Fixed Bottom Nav -->
+            <!-- Fixed Bottom Nav (Updated Search Icon to Library Icon) -->
             <div class="bottom-nav">
                 <button id="nav-home" class="nav-item"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
-                <button id="nav-search" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></button>
+                <button id="nav-search" class="nav-item active">
+                    <!-- Material Library Music Icon -->
+                    <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zM10 15l5-3-5-3v6z"/></svg>
+                </button>
                 <button id="nav-fav" class="nav-item">
                     <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                 </button>
@@ -419,20 +463,23 @@
                     <svg id="icon-pause" style="display:none;" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                 </button>
                 <button class="ctrl-btn" id="btn-next"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
-                <button class="ctrl-btn" style="visibility:hidden;"><svg viewBox="0 0 24 24"></svg></button>
+                
+                <!-- Book/PDF Viewer Button linking to book.html -->
+                <button class="ctrl-btn" id="btn-book" onclick="window.location.href='book.html'" title="View Aarti Book">
+                    <svg viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zM21 18.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg>
+                </button>
             </div>
         </div>
 
     </div>
 
-    <!-- Intro set to loop natively -->
     <audio id="audio-intro" src="intro.mp3" loop></audio>
     <audio id="audio-main"></audio>
 
     <script>
         /* ================= GITHUB CONFIG ================= */
         const GITHUB_USERNAME = 'unskyit';
-        const GITHUB_REPO = 'aarti';
+        const GITHUB_REPO = 'tusic'; // CHANGE TO 'tusic' when ready!
         const AUDIO_FOLDER_PATH = 'audio'; 
         
         let playlist = [];
@@ -443,6 +490,7 @@
         
         let currentFilter = "";
         let showFavoritesOnly = false;
+        let isReorderMode = false;
 
         const AppStorage = {
             getFavs: () => JSON.parse(localStorage.getItem('mummyAartiFavs') || '[]'),
@@ -457,10 +505,24 @@
             setRecent: (baseName) => localStorage.setItem('mummyAartiRecent', baseName),
             getRecent: () => localStorage.getItem('mummyAartiRecent'),
             getLang: () => localStorage.getItem('mummyAartiLang') || 'both',
-            setLang: (lang) => localStorage.setItem('mummyAartiLang', lang)
+            setLang: (lang) => localStorage.setItem('mummyAartiLang', lang),
+            getCustomOrder: () => JSON.parse(localStorage.getItem('tusicCustomOrder') || '[]'),
+            setCustomOrder: (arr) => localStorage.setItem('tusicCustomOrder', JSON.stringify(arr))
         };
 
         let currentLangMode = AppStorage.getLang();
+
+        // Slideshow Logic (Fades every 4s)
+        const slideshowImages = document.querySelectorAll('.slideshow-img');
+        let currentSlide = 0;
+        setInterval(() => {
+            let validImages = Array.from(slideshowImages).filter(img => img.style.display !== 'none');
+            if(validImages.length > 1) {
+                validImages.forEach(img => img.classList.remove('active'));
+                currentSlide = (currentSlide + 1) % validImages.length;
+                validImages[currentSlide].classList.add('active');
+            }
+        }, 4000); 
 
         // --- Fetch & Build Engine ---
         async function scanGitHubRepo() {
@@ -489,10 +551,21 @@
                     };
                 });
 
+                // Apply Custom Order Layout
+                const savedOrder = AppStorage.getCustomOrder();
+                if(savedOrder && savedOrder.length > 0) {
+                    playlist.sort((a, b) => {
+                        let idxA = savedOrder.indexOf(a.baseName);
+                        let idxB = savedOrder.indexOf(b.baseName);
+                        if (idxA === -1) idxA = 999; 
+                        if (idxB === -1) idxB = 999;
+                        return idxA - idxB;
+                    });
+                }
+
                 loader.style.display = 'none';
                 initDynamicCards();
                 
-                // Only render standard library if a direct link wasn't opened
                 if(!checkURLParams()) renderLibrary();
 
             } catch (error) {
@@ -528,21 +601,18 @@
             const params = new URLSearchParams(window.location.search);
             const trackFile = params.get('track');
             if (trackFile) {
-                // Normalize URL parameter (removes .mp3, converts hyphens to spaces, all lowercase)
+                // Highly robust matching: strip hyphens, mp3, lowercased spaces
                 const searchTarget = trackFile.replace('.mp3', '').replace(/-/g, ' ').toLowerCase();
                 
                 const idx = playlist.findIndex(t => {
-                    // Normalize the database name the exact same way for a flawless match
                     const cleanBase = t.baseName.replace(/-/g, ' ').toLowerCase();
                     return cleanBase === searchTarget;
                 });
                 
                 if (idx !== -1) {
-                    // Setup UI silently for professional entry
                     vIntro.classList.add('hidden-left');
                     vLib.classList.add('hidden-left');
-                    
-                    renderLibrary(); // Render list in background so the back button works seamlessly
+                    renderLibrary(); 
                     openPlayer(idx);
                     return true;
                 }
@@ -555,12 +625,10 @@
         const audioIntro = document.getElementById('audio-intro');
         audioIntro.volume = 1; 
 
-        // Attempt autoplay on load (Browsers may block this)
         window.addEventListener('DOMContentLoaded', () => {
-            audioIntro.play().catch(e => console.log('Autoplay blocked. Awaiting user interaction.'));
+            audioIntro.play().catch(e => console.log('Autoplay blocked. Awaiting tap.'));
         });
 
-        // Intro Button Toggle Logic
         const btnIntroMusic = document.getElementById('btn-intro-music');
         const iconVolOn = document.getElementById('icon-vol-on');
         const iconVolOff = document.getElementById('icon-vol-off');
@@ -583,11 +651,9 @@
             else audioIntro.pause();
         });
 
-        // Professional Cinematic Fade-Out
         function fadeOutIntro() {
             if (audioIntro.paused) return;
             let vol = audioIntro.volume;
-            // Gradually reduce volume every 30ms
             const fadeInterval = setInterval(() => {
                 if (vol > 0.05) {
                     vol -= 0.05;
@@ -596,7 +662,7 @@
                     clearInterval(fadeInterval);
                     audioIntro.pause();
                     audioIntro.currentTime = 0; 
-                    audioIntro.volume = 1; // Reset volume back to max for next time
+                    audioIntro.volume = 1; 
                 }
             }, 30); 
         }
@@ -608,7 +674,7 @@
         const searchInput = document.getElementById('search-input');
         
         document.getElementById('btn-start').addEventListener('click', () => {
-            fadeOutIntro(); // Smooth cinematic fade out
+            fadeOutIntro(); 
             vIntro.classList.add('hidden-left');
             vLib.classList.remove('hidden-right');
             if (playlist.length === 0) scanGitHubRepo();
@@ -626,7 +692,6 @@
             vIntro.classList.remove('hidden-left');
             updateBottomNav('nav-home');
             
-            // Only resume ambience if main aarti is completely silent
             if (audioMain.paused || audioMain.src === "") {
                 audioIntro.currentTime = 0; 
                 audioIntro.play().catch(() => {});
@@ -662,9 +727,10 @@
             renderLibrary();
         });
 
+        // Language Toggle
         const btnLangToggle = document.getElementById('btn-lang-toggle');
         const spanLangText = document.getElementById('lang-btn-text');
-        const langLabels = { 'both': 'Lyrics: Both', 'hindi': 'Lyrics: Hindi', 'hinglish': 'Lyrics: English' };
+        const langLabels = { 'both': 'Both', 'hindi': 'Hindi', 'hinglish': 'English' };
         spanLangText.innerText = langLabels[currentLangMode];
 
         btnLangToggle.addEventListener('click', () => {
@@ -681,11 +747,43 @@
             }
         });
 
+        // Sort Toggle
+        const btnReorderToggle = document.getElementById('btn-reorder-toggle');
+        btnReorderToggle.addEventListener('click', () => {
+            isReorderMode = !isReorderMode;
+            btnReorderToggle.style.background = isReorderMode ? 'var(--bg-light)' : 'var(--bg-white)';
+            renderLibrary();
+        });
+
+        window.moveTrack = function(e, idx, dir) {
+            e.stopPropagation();
+            if (dir === -1 && idx > 0) {
+                [playlist[idx - 1], playlist[idx]] = [playlist[idx], playlist[idx - 1]];
+            } else if (dir === 1 && idx < playlist.length - 1) {
+                [playlist[idx + 1], playlist[idx]] = [playlist[idx], playlist[idx + 1]];
+            }
+            AppStorage.setCustomOrder(playlist.map(t => t.baseName));
+            
+            // Fix index syncing for current song
+            if(currentIdx === idx) currentIdx += dir;
+            else if(currentIdx === idx + dir) currentIdx -= dir;
+            
+            renderLibrary();
+        };
+
         const trackList = document.getElementById('track-list-container');
         
         function renderLibrary() {
             trackList.innerHTML = '';
             let listToRender = playlist;
+
+            // Security: Disable ordering while filtering to avoid index corruption
+            if (showFavoritesOnly || currentFilter) {
+                btnReorderToggle.style.display = 'none';
+                isReorderMode = false;
+            } else {
+                btnReorderToggle.style.display = 'flex';
+            }
 
             if (showFavoritesOnly) {
                 const favs = AppStorage.getFavs();
@@ -707,7 +805,7 @@
                 const originalIndex = playlist.findIndex(t => t.baseName === track.baseName);
                 const el = document.createElement('button');
                 
-                el.className = 'track-item'; 
+                el.className = 'track-item' + (isReorderMode ? ' is-editing' : ''); 
                 el.setAttribute('data-index', originalIndex);
                 
                 el.innerHTML = `
@@ -720,12 +818,18 @@
                             <p>${track.artist}</p>
                         </div>
                     </div>
+                    
+                    <div class="reorder-controls">
+                        <div class="reorder-btn" onclick="moveTrack(event, ${originalIndex}, -1)"><svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg></div>
+                        <div class="reorder-btn" onclick="moveTrack(event, ${originalIndex}, 1)"><svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg></div>
+                    </div>
+
                     <div class="play-arrow">
                         <svg class="icon-list-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                         <svg class="icon-list-pause" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                     </div>
                 `;
-                el.addEventListener('click', () => openPlayer(originalIndex));
+                el.addEventListener('click', () => { if(!isReorderMode) openPlayer(originalIndex) });
                 trackList.appendChild(el);
             });
 
@@ -782,7 +886,7 @@
         });
 
         async function openPlayer(index) {
-            fadeOutIntro(); // Smooth cinematic fade out
+            fadeOutIntro(); 
             
             if (currentIdx === index && audioMain.src !== "") {
                 openPlayerView();
