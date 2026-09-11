@@ -46,7 +46,7 @@
             }
         }
 
-        /* --- VIEWS (Highly Optimized for Mobile GPU) --- */
+        /* --- VIEWS (GPU Accelerated) --- */
         .view {
             position: absolute; top: 0; left: 0; 
             width: 100%; height: 100%;
@@ -54,7 +54,7 @@
             display: flex; flex-direction: column;
             transform: translate3d(0, 0, 0); 
             will-change: transform, opacity;
-            backface-visibility: hidden; /* Prevents visual tearing on mobile */
+            backface-visibility: hidden; 
             transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease, visibility 0s linear 0s;
             z-index: 10;
             overflow-y: auto; overflow-x: hidden;
@@ -99,7 +99,21 @@
             flex: 1; overflow-y: auto; scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
             padding: 40px 24px 120px 24px; 
         }
-        .header h1 { color: var(--text-dark); font-size: 2rem; margin-bottom: 20px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { color: var(--text-dark); font-size: 2rem; }
+        
+        /* Brilliant Lyrics Language Toggle Button */
+        .lang-toggle {
+            background: var(--bg-white); color: var(--text-dark);
+            border: 1px solid rgba(0,0,0,0.08); padding: 8px 14px; border-radius: 30px;
+            font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03); transition: transform 0.2s, background 0.3s;
+        }
+        .lang-toggle:active { transform: scale(0.92); }
+        .lang-toggle:hover { background: var(--bg-light); }
+        .lang-toggle svg { width: 16px; height: 16px; color: var(--accent-red); }
         
         .search-bar {
             background: var(--bg-light); border-radius: 16px; padding: 14px 18px;
@@ -114,16 +128,13 @@
 
         .section-title { color: var(--text-dark); font-size: 1.2rem; font-weight: 600; margin-bottom: 16px; }
         
-        /* Animated Fresh Cards (Full Bleed Fix for Small Devices) */
         .playlists { 
             display: flex; gap: 16px; margin-bottom: 32px; 
             overflow-x: auto; padding-bottom: 12px; scrollbar-width: none; 
-            /* Negative margin & positive padding allows cards to scroll edge-to-edge seamlessly */
             margin-left: -24px; margin-right: -24px; 
             padding-left: 24px; padding-right: 24px;
             -webkit-overflow-scrolling: touch;
         }
-        /* Adds spacer at the end of the scroll so the last card isn't hugging the edge */
         .playlists::after { content: ''; width: 8px; flex-shrink: 0; }
         
         .playlist-card { 
@@ -162,7 +173,6 @@
         }
         .track-item:active { opacity: 0.7; transform: scale(0.98); }
         
-        /* Active Track Styles */
         .track-item.active-track {
             border: 1px solid rgba(217, 90, 83, 0.3);
             background: rgba(217, 90, 83, 0.05);
@@ -174,7 +184,6 @@
         .track-item.active-track h4 { color: var(--accent-red); font-weight: 700; }
         .track-item.active-track p { color: var(--accent-red); opacity: 0.8; }
         
-        /* Optimized SVG Icon Swapping (Zero DOM manipulation) */
         .play-arrow { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .icon-list-play { display: block; }
         .icon-list-pause { display: none; }
@@ -197,7 +206,6 @@
         #loader { text-align: center; color: var(--text-muted); font-size: 0.9rem; padding: 30px 0; }
         .empty-state { text-align: center; color: var(--text-muted); padding: 40px 20px; font-size: 0.95rem; }
 
-        /* Bottom Nav */
         .bottom-nav {
             position: absolute; bottom: 0; left: 0; width: 100%; height: 75px;
             background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
@@ -228,16 +236,21 @@
         }
         
         .lyric-line {
-            font-size: 1.15rem; color: var(--text-muted); text-align: center; 
-            margin: 14px 0; line-height: 1.5; 
-            opacity: 0.3; filter: blur(0.5px);
+            font-size: 1.35rem; 
+            font-weight: 700;
+            color: var(--text-dark);
+            text-align: center; 
+            margin: 22px 0; line-height: 1.5; 
+            opacity: 0.25; filter: blur(1px); 
             transform-origin: center center;
-            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+            scroll-margin-top: 40px; 
+            word-wrap: break-word;
         }
         .lyric-line.active {
-            font-size: 1.45rem; color: var(--text-dark); font-weight: 700; 
-            opacity: 1; transform: scale(1.05); filter: blur(0px);
+            opacity: 1; filter: blur(0px);
             text-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transform: scale(1.02); 
         }
 
         .player-info { text-align: center; margin-bottom: 24px; flex-shrink: 0; width: 100%; }
@@ -297,7 +310,15 @@
         <div id="view-library" class="view hidden-right">
             
             <div class="library-scroll-area" id="library-scroll">
-                <div class="header" id="lib-header"><h1>Library</h1></div>
+                <div class="header" id="lib-header">
+                    <h1 id="list-title-text">Library</h1>
+                    
+                    <!-- Highly clear Lyrics Mode Button -->
+                    <button id="btn-lang-toggle" class="lang-toggle">
+                        <svg viewBox="0 0 24 24"><path d="M14 17H4v2h10v-2zm6-8H4v2h16V9zM4 15h16v-2H4v2zM4 5v2h16V5H4z"/></svg>
+                        <span id="lang-btn-text">Lyrics: Both</span>
+                    </button>
+                </div>
                 
                 <div class="search-bar">
                     <svg viewBox="0 0 24 24" style="color:var(--text-muted); width:20px;height:20px;"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
@@ -307,7 +328,6 @@
                 <div id="dynamic-cards-container">
                     <div class="section-title">For You</div>
                     <div class="playlists">
-                        <!-- Recent Card -->
                         <div class="playlist-card" id="card-recent" style="display: none;">
                             <div class="playlist-img bg-gradient-1">
                                 <svg viewBox="0 0 24 24" style="width:36px;height:36px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
@@ -315,7 +335,6 @@
                             <h3>Recently Played</h3>
                             <p id="recent-title">Loading...</p>
                         </div>
-                        <!-- Suggestion Card -->
                         <div class="playlist-card" id="card-suggested" style="display: none;">
                             <div class="playlist-img bg-gradient-2">
                                 <svg viewBox="0 0 24 24" style="width:36px;height:36px;"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
@@ -347,9 +366,7 @@
                 <button class="ctrl-btn" id="btn-back"><svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg></button>
                 <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted);">Now Playing</div>
                 <button class="ctrl-btn" id="btn-player-fav">
-                    <!-- Outline Heart -->
                     <svg id="icon-heart-outline" viewBox="0 0 24 24"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/></svg>
-                    <!-- Filled Heart -->
                     <svg id="icon-heart-filled" style="display:none;" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                 </button>
             </div>
@@ -401,6 +418,9 @@
         let currentLyrics = [];
         let currentFetchId = 0; 
         
+        // Lock flag that prevents DOM layout thrashing (The White Screen Fix)
+        let isTransitioning = false;
+        
         // --- State Management ---
         let currentFilter = "";
         let showFavoritesOnly = false;
@@ -416,8 +436,12 @@
             },
             isFav: (baseName) => AppStorage.getFavs().includes(baseName),
             setRecent: (baseName) => localStorage.setItem('mummyAartiRecent', baseName),
-            getRecent: () => localStorage.getItem('mummyAartiRecent')
+            getRecent: () => localStorage.getItem('mummyAartiRecent'),
+            getLang: () => localStorage.getItem('mummyAartiLang') || 'both',
+            setLang: (lang) => localStorage.setItem('mummyAartiLang', lang)
         };
+
+        let currentLangMode = AppStorage.getLang();
 
         // --- Fetch & Build Engine ---
         async function scanGitHubRepo() {
@@ -448,9 +472,7 @@
 
                 loader.style.display = 'none';
                 initDynamicCards();
-                
                 if(!checkURLParams()) renderLibrary();
-
             } catch (error) {
                 console.error(error);
                 loader.innerText = "Error loading files. Ensure repo is public.";
@@ -493,6 +515,47 @@
             return false;
         }
 
+        // --- Audio Core & Logic ---
+        const audioMain = document.getElementById('audio-main');
+        const audioIntro = document.getElementById('audio-intro');
+        audioIntro.volume = 0; // Starts at 0 for fade in
+
+        function stopIntro() {
+            audioIntro.pause();
+            audioIntro.currentTime = 0;
+        }
+
+        // Brilliant Custom Fade & Loop Engine for Intro
+        audioIntro.addEventListener('timeupdate', () => {
+            if (audioIntro.paused || !audioIntro.duration) return;
+            const fadeTime = 2.0; 
+            const rem = audioIntro.duration - audioIntro.currentTime;
+            
+            if (rem <= fadeTime && rem > 0) {
+                audioIntro.volume = Math.max(0, rem / fadeTime);
+            } else if (audioIntro.currentTime <= fadeTime) {
+                audioIntro.volume = Math.min(1, audioIntro.currentTime / fadeTime);
+            } else {
+                audioIntro.volume = 1;
+            }
+        });
+
+        audioIntro.addEventListener('ended', () => {
+            audioIntro.currentTime = 0;
+            audioIntro.play().catch(e => console.log('Intro loop prevented'));
+        });
+
+        // Trigger intro gently on first click anywhere if home screen is visible
+        let hasInteracted = false;
+        document.body.addEventListener('click', () => {
+            if (!hasInteracted && !document.getElementById('view-intro').classList.contains('hidden-left')) {
+                hasInteracted = true;
+                if (audioMain.paused || audioMain.src === "") {
+                    audioIntro.play().catch(()=>{});
+                }
+            }
+        }, {once: true});
+
         // --- Navigation ---
         const vIntro = document.getElementById('view-intro');
         const vLib = document.getElementById('view-library');
@@ -500,8 +563,7 @@
         const searchInput = document.getElementById('search-input');
         
         document.getElementById('btn-start').addEventListener('click', () => {
-            document.getElementById('audio-intro').play().catch(() => {});
-            
+            stopIntro(); 
             vIntro.classList.add('hidden-left');
             vLib.classList.remove('hidden-right');
             if (playlist.length === 0) scanGitHubRepo();
@@ -518,6 +580,12 @@
             vPlayer.classList.add('hidden-right');
             vIntro.classList.remove('hidden-left');
             updateBottomNav('nav-home');
+            
+            // Only play intro if main aarti is completely silent
+            if (audioMain.paused || audioMain.src === "") {
+                audioIntro.currentTime = 0; 
+                audioIntro.play().catch(() => {});
+            }
         });
 
         document.getElementById('nav-search').addEventListener('click', () => {
@@ -529,7 +597,7 @@
             showFavoritesOnly = false;
             document.getElementById('dynamic-cards-container').style.display = 'block';
             document.getElementById('list-title').innerText = "All Tracks";
-            document.getElementById('lib-header').innerHTML = "<h1>Library</h1>";
+            document.getElementById('list-title-text').innerText = "Library";
             
             renderLibrary();
             document.getElementById('library-scroll').scrollTop = 0;
@@ -544,9 +612,29 @@
             showFavoritesOnly = true;
             document.getElementById('dynamic-cards-container').style.display = 'none';
             document.getElementById('list-title').innerText = "Your Favorites";
-            document.getElementById('lib-header').innerHTML = "<h1>Favorites</h1>";
+            document.getElementById('list-title-text').innerText = "Favorites";
             
             renderLibrary();
+        });
+
+        // --- Language Toggle Logic ---
+        const btnLangToggle = document.getElementById('btn-lang-toggle');
+        const spanLangText = document.getElementById('lang-btn-text');
+        const langLabels = { 'both': 'Lyrics: Both', 'hindi': 'Lyrics: Hindi', 'hinglish': 'Lyrics: English' };
+        spanLangText.innerText = langLabels[currentLangMode];
+
+        btnLangToggle.addEventListener('click', () => {
+            if (currentLangMode === 'both') currentLangMode = 'hindi';
+            else if (currentLangMode === 'hindi') currentLangMode = 'hinglish';
+            else currentLangMode = 'both';
+            
+            AppStorage.setLang(currentLangMode);
+            spanLangText.innerText = langLabels[currentLangMode];
+            
+            if (currentLyrics.length > 0) {
+                renderLyrics();
+                updatePlayerUI(); 
+            }
         });
 
         // --- Rendering Library Engine ---
@@ -579,7 +667,6 @@
                 el.className = 'track-item'; 
                 el.setAttribute('data-index', originalIndex);
                 
-                // Using SVG classes instead of raw HTML injecting protects the CPU
                 el.innerHTML = `
                     <div class="track-item-left">
                         <div class="track-icon">
@@ -602,7 +689,6 @@
             refreshLibraryUI();
         }
 
-        // Highly Optimized pure-CSS Class Toggling (No InnerHTML Thrashing!)
         function refreshLibraryUI() {
             const isPlaying = !audioMain.paused && audioMain.src !== "";
             
@@ -632,8 +718,20 @@
             refreshLibraryUI(); 
         });
 
-        // --- Player Core ---
-        const audioMain = document.getElementById('audio-main');
+        // --- Master Player UI Animation Function ---
+        function openPlayerView() {
+            // Lock UI Layout Updates to fix the White Screen bug!
+            isTransitioning = true;
+            
+            vLib.classList.add('hidden-left');
+            vPlayer.classList.remove('hidden-right');
+            
+            // Wait for 450ms (the CSS slide takes 400ms) before unlocking and snapping UI
+            setTimeout(() => {
+                isTransitioning = false;
+                updatePlayerUI(); 
+            }, 450); 
+        }
 
         audioMain.addEventListener('play', () => {
             updatePlayIcon(true);
@@ -646,13 +744,11 @@
         });
 
         async function openPlayer(index) {
-            document.getElementById('audio-intro').pause(); 
+            stopIntro(); 
             
+            // If already playing this track, trigger safe animation slide
             if (currentIdx === index && audioMain.src !== "") {
-                // If it's already playing, just slide to view and instantly update UI
-                vLib.classList.add('hidden-left');
-                vPlayer.classList.remove('hidden-right');
-                updatePlayerUI();
+                openPlayerView();
                 return; 
             }
 
@@ -666,8 +762,7 @@
             audioMain.src = track.fileUrl;
             audioMain.play().catch(e => console.log('Playback prevented:', e));
             
-            vLib.classList.add('hidden-left');
-            vPlayer.classList.remove('hidden-right');
+            openPlayerView();
 
             document.getElementById('time-curr').innerText = "0:00";
             document.getElementById('time-tot').innerText = "0:00";
@@ -700,7 +795,7 @@
             syncPlayerFavIcon();
         });
 
-        // --- Lyrics Engine ---
+        // --- Intelligent Lyrics Engine ---
         async function fetchLyrics(baseName) {
             const myFetchId = ++currentFetchId;
             const lyricsDiv = document.getElementById('lyrics-display');
@@ -734,19 +829,41 @@
             lyricsDiv.appendChild(spacerTop);
 
             currentLyrics.forEach((line, i) => {
+                let displayText = "";
+                
+                if (line.text) {
+                    if (currentLangMode !== 'both') {
+                        const subLines = line.text.split('\n');
+                        const filtered = subLines.filter(l => {
+                            const hasDevanagari = /[\u0900-\u097F]/.test(l);
+                            const hasLatin = /[a-zA-Z]/.test(l);
+                            if (currentLangMode === 'hindi') return hasDevanagari || (!hasDevanagari && !hasLatin);
+                            if (currentLangMode === 'hinglish') return hasLatin || (!hasDevanagari && !hasLatin);
+                            return true;
+                        });
+                        
+                        if (filtered.length > 0) displayText = filtered.join('<br>');
+                        else displayText = line.text.replace(/\n/g, '<br>');
+                    } else {
+                        displayText = line.text.replace(/\n/g, '<br>');
+                    }
+                }
+
                 const p = document.createElement('div');
                 p.className = 'lyric-line';
                 p.id = 'lyric-' + i;
-                p.innerText = line.text; 
+                p.innerHTML = displayText; 
                 lyricsDiv.appendChild(p);
             });
 
             const spacerBot = document.createElement('div');
-            spacerBot.style.height = '60px';
+            spacerBot.style.height = '120px'; 
             lyricsDiv.appendChild(spacerBot);
+            
+            if (!isTransitioning) updatePlayerUI(); 
         }
 
-        // --- Controls, Scrubber, & CPU Saver ---
+        // --- Controls & Scrubber ---
         const btnPlay = document.getElementById('btn-play');
         const iconPlay = document.getElementById('icon-play');
         const iconPause = document.getElementById('icon-pause');
@@ -757,11 +874,8 @@
         }
 
         btnPlay.addEventListener('click', () => {
-            if (audioMain.paused) { 
-                audioMain.play().catch(e => console.log('Playback prevented')); 
-            } else { 
-                audioMain.pause(); 
-            }
+            if (audioMain.paused) audioMain.play().catch(e => console.log('Playback prevented')); 
+            else audioMain.pause(); 
         });
 
         document.getElementById('btn-next').addEventListener('click', () => {
@@ -800,17 +914,15 @@
 
         // The Master UI Sync Function
         function updatePlayerUI() {
-            if (!audioMain.duration) return;
+            // Absolute Lock: Don't execute DOM logic if hidden or sliding
+            if (!audioMain.duration || vPlayer.classList.contains('hidden-right') || isTransitioning) return;
             
-            // 1. Update Time
             tCurr.innerText = fmt(audioMain.currentTime);
             
-            // 2. Update Progress Bar
             if (!isScrubbing) {
                 progFill.style.width = `${(audioMain.currentTime / audioMain.duration) * 100}%`;
             }
             
-            // 3. Update Lyrics Sync
             if (currentLyrics.length === 0) return;
             const ct = audioMain.currentTime;
             let activeIdx = -1;
@@ -823,14 +935,12 @@
                 if (activeEl && !activeEl.classList.contains('active')) {
                     document.querySelectorAll('.lyric-line').forEach(el => el.classList.remove('active'));
                     activeEl.classList.add('active');
-                    activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    activeEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
         }
 
-        // CPU Saver: Only update the heavy UI elements if the player is actually visible!
         audioMain.addEventListener('timeupdate', () => {
-            if (vPlayer.classList.contains('hidden-right')) return; // Pauses DOM manipulation to fix layout thrashing!
             updatePlayerUI();
         });
 
@@ -843,7 +953,7 @@
             
             progFill.style.width = `${pct * 100}%`;
             audioMain.currentTime = pct * audioMain.duration;
-            updatePlayerUI(); // Immediately force UI sync while scrubbing
+            updatePlayerUI(); 
         }
 
         progBar.addEventListener('pointerdown', (e) => {
