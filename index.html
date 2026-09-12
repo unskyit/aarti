@@ -220,7 +220,7 @@
             cursor: pointer; padding: 10px; background: var(--bg-light); 
             border-radius: 16px; border: 1px solid transparent; width: 100%; 
             transition: opacity 0.2s, background 0.3s, border 0.3s;
-            position: relative; /* Required for gliding animation */
+            position: relative; 
         }
         
         .track-item.active-track {
@@ -372,7 +372,6 @@
             
             <div class="intro-text">
                 <h1>Tusic ❤️</h1>
-                <!-- Just for you subtitle update -->
                 <p>A beautiful collection of tracks, just for you. Keep the voices of your loved ones close, always ❤️.</p>
                 <button class="btn-start" id="btn-start">Listen Now</button>
             </div>
@@ -507,6 +506,9 @@
         let showFavoritesOnly = false;
         let isReorderMode = false;
 
+        // Initialize Base Browser History
+        if (!history.state) history.replaceState({view: 'home'}, '', '');
+
         const AppStorage = {
             getFavs: () => JSON.parse(localStorage.getItem('mummyAartiFavs') || '[]'),
             toggleFav: (baseName) => {
@@ -539,7 +541,7 @@
             }
         }, 4000); 
 
-        // Hide Ambience UX Hint on any interaction
+        // Hide Ambience UX Hint on interaction
         function hideAmbienceHint() {
             const hint = document.getElementById('ambience-hint');
             if(hint) hint.style.display = 'none';
@@ -573,7 +575,6 @@
                     };
                 });
 
-                // Apply Custom Saved Order
                 const savedOrder = AppStorage.getCustomOrder();
                 if(savedOrder && savedOrder.length > 0) {
                     playlist.sort((a, b) => {
@@ -627,7 +628,12 @@
                     const cleanBase = t.baseName.replace(/-/g, ' ').toLowerCase();
                     return cleanBase === searchTarget;
                 });
+                
                 if (idx !== -1) {
+                    // Inject history to prevent back-button exit
+                    history.replaceState({view: 'home'}, '', window.location.pathname);
+                    history.pushState({view: 'library'}, '', window.location.pathname);
+                    
                     vIntro.classList.add('hidden-left');
                     vLib.classList.add('hidden-left');
                     renderLibrary(); 
@@ -674,7 +680,6 @@
             }
         });
 
-        // Cinematic Fade-Out
         function fadeOutIntro() {
             if (audioIntro.paused) return;
             let vol = audioIntro.volume;
@@ -689,17 +694,57 @@
             }, 30); 
         }
 
-        // --- Navigation ---
+        // --- Hardware Back Button Routing (History API) ---
         const vIntro = document.getElementById('view-intro');
         const vLib = document.getElementById('view-library');
         const vPlayer = document.getElementById('view-player');
-        const searchInput = document.getElementById('search-input');
         
-        document.getElementById('btn-start').addEventListener('click', () => {
-            fadeOutIntro(); 
-            vIntro.classList.add('hidden-left');
-            vLib.classList.remove('hidden-right');
-            if (playlist.length === 0) scanGitHubRepo();
+        function navTo(view, push = true) {
+            if (push) history.pushState({view}, '', '');
+            
+            if (view === 'home') {
+                vLib.classList.add('hidden-right');
+                vPlayer.classList.add('hidden-right');
+                vIntro.classList.remove('hidden-left');
+                updateBottomNav('nav-home');
+                
+                if (audioMain.paused || audioMain.src === "") {
+                    audioIntro.volume = 1; 
+                    audioIntro.play().catch(() => {});
+                }
+            } else if (view === 'library') {
+                showFavoritesOnly = false;
+                document.getElementById('dynamic-cards-container').style.display = 'block';
+                document.getElementById('list-title').innerText = "All Tracks";
+                document.getElementById('list-title-text').innerText = "Library";
+                
+                vPlayer.classList.add('hidden-right');
+                vIntro.classList.add('hidden-left');
+                vLib.classList.remove('hidden-left', 'hidden-right');
+                updateBottomNav('nav-search');
+                renderLibrary();
+                document.getElementById('library-scroll').scrollTop = 0;
+            } else if (view === 'fav') {
+                showFavoritesOnly = true;
+                document.getElementById('dynamic-cards-container').style.display = 'none';
+                document.getElementById('list-title').innerText = "Your Favorites";
+                document.getElementById('list-title-text').innerText = "Favorites";
+                
+                vPlayer.classList.add('hidden-right');
+                vIntro.classList.add('hidden-left');
+                vLib.classList.remove('hidden-left', 'hidden-right');
+                updateBottomNav('nav-fav');
+                renderLibrary();
+            }
+        }
+
+        window.addEventListener('popstate', (e) => {
+            const view = e.state ? e.state.view : 'home';
+            if (view === 'player') {
+                openPlayerView(false);
+            } else {
+                navTo(view, false);
+            }
         });
 
         const navBtns = document.querySelectorAll('.nav-item');
@@ -708,46 +753,18 @@
             document.getElementById(activeId).classList.add('active');
         }
 
-        // Return to Home -> Resumes Ambience Flawlessly
-        document.getElementById('nav-home').addEventListener('click', () => {
-            vLib.classList.add('hidden-right');
-            vPlayer.classList.add('hidden-right');
-            vIntro.classList.remove('hidden-left');
-            updateBottomNav('nav-home');
-            
-            if (audioMain.paused || audioMain.src === "") {
-                audioIntro.volume = 1; 
-                audioIntro.play().catch(() => {});
-            }
+        document.getElementById('btn-start').addEventListener('click', () => {
+            fadeOutIntro(); 
+            navTo('library');
+            if (playlist.length === 0) scanGitHubRepo();
         });
 
-        document.getElementById('nav-search').addEventListener('click', () => {
-            vIntro.classList.add('hidden-left');
-            vPlayer.classList.add('hidden-right');
-            vLib.classList.remove('hidden-left', 'hidden-right');
-            updateBottomNav('nav-search');
-            
-            showFavoritesOnly = false;
-            document.getElementById('dynamic-cards-container').style.display = 'block';
-            document.getElementById('list-title').innerText = "All Tracks";
-            document.getElementById('list-title-text').innerText = "Library";
-            
-            renderLibrary();
-            document.getElementById('library-scroll').scrollTop = 0;
-        });
+        document.getElementById('nav-home').addEventListener('click', () => navTo('home'));
+        document.getElementById('nav-search').addEventListener('click', () => navTo('library'));
+        document.getElementById('nav-fav').addEventListener('click', () => navTo('fav'));
 
-        document.getElementById('nav-fav').addEventListener('click', () => {
-            vIntro.classList.add('hidden-left');
-            vPlayer.classList.add('hidden-right');
-            vLib.classList.remove('hidden-left', 'hidden-right');
-            updateBottomNav('nav-fav');
-            
-            showFavoritesOnly = true;
-            document.getElementById('dynamic-cards-container').style.display = 'none';
-            document.getElementById('list-title').innerText = "Your Favorites";
-            document.getElementById('list-title-text').innerText = "Favorites";
-            
-            renderLibrary();
+        document.getElementById('btn-back').addEventListener('click', () => {
+            history.back(); // Naturally triggers popstate back to library
         });
 
         // Language Toggle
@@ -770,7 +787,7 @@
             }
         });
 
-        // Smart Reordering Logic
+        // Smart Reordering Logic (Smooth Slow Glide)
         const btnReorderToggle = document.getElementById('btn-reorder-toggle');
         btnReorderToggle.addEventListener('click', () => {
             isReorderMode = !isReorderMode;
@@ -778,7 +795,6 @@
             renderLibrary();
         });
 
-        // Silky Smooth Sorting Animation
         window.moveTrack = function(e, idx, dir) {
             e.stopPropagation();
             if (dir === -1 && idx > 0) {
@@ -792,7 +808,6 @@
             if(currentIdx === idx) currentIdx += dir;
             else if(currentIdx === idx + dir) currentIdx -= dir;
             
-            // Execute glide animation
             const trackElements = document.querySelectorAll('.track-item');
             const targetEl = Array.from(trackElements).find(el => parseInt(el.getAttribute('data-index')) === idx);
             const siblingEl = Array.from(trackElements).find(el => parseInt(el.getAttribute('data-index')) === (idx + dir));
@@ -802,14 +817,14 @@
                 const siblingY = dir === -1 ? siblingEl.offsetHeight + 12 : -siblingEl.offsetHeight - 12;
 
                 targetEl.style.transform = `translateY(${targetY}px)`;
-                targetEl.style.transition = 'transform 0.25s ease';
+                targetEl.style.transition = 'transform 0.45s cubic-bezier(0.25, 0.8, 0.25, 1)';
                 targetEl.style.zIndex = '10';
                 
                 siblingEl.style.transform = `translateY(${siblingY}px)`;
-                siblingEl.style.transition = 'transform 0.25s ease';
+                siblingEl.style.transition = 'transform 0.45s cubic-bezier(0.25, 0.8, 0.25, 1)';
                 siblingEl.style.zIndex = '9';
                 
-                setTimeout(renderLibrary, 250);
+                setTimeout(renderLibrary, 450);
             } else {
                 renderLibrary();
             }
@@ -896,20 +911,15 @@
             });
         }
 
-        searchInput.addEventListener('input', (e) => {
+        document.getElementById('search-input').addEventListener('input', (e) => {
             currentFilter = e.target.value;
             renderLibrary();
         });
 
-        document.getElementById('btn-back').addEventListener('click', () => {
-            vPlayer.classList.add('hidden-right');
-            vLib.classList.remove('hidden-left');
-            initDynamicCards();
-            refreshLibraryUI(); 
-        });
-
-        function openPlayerView() {
+        function openPlayerView(pushState = true) {
             isTransitioning = true;
+            if (pushState) history.pushState({view: 'player'}, '', '');
+            
             vLib.classList.add('hidden-left');
             vPlayer.classList.remove('hidden-right');
             setTimeout(() => {
@@ -932,7 +942,7 @@
             fadeOutIntro(); 
             
             if (currentIdx === index && audioMain.src !== "") {
-                openPlayerView();
+                openPlayerView(true);
                 return; 
             }
 
@@ -946,7 +956,7 @@
             audioMain.src = track.fileUrl;
             audioMain.play().catch(e => console.log('Playback prevented:', e));
             
-            openPlayerView();
+            openPlayerView(true);
 
             document.getElementById('time-curr').innerText = "0:00";
             document.getElementById('time-tot').innerText = "0:00";
