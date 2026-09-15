@@ -336,6 +336,135 @@
             border-radius: 50%;
         }
 
+        /* =========================================
+           FAB & BOTTOM SHEET NAV SPECIFIC STYLES 
+           ========================================= */
+        .fab-container {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 1000;
+        }
+
+        .fab-btn {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: var(--theme-red);
+            color: white;
+            border: none;
+            box-shadow: 0 6px 20px rgba(139, 21, 21, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .fab-btn:hover, .fab-btn:active {
+            transform: scale(1.05) translateY(-2px);
+            background: #7a1212;
+            box-shadow: 0 8px 25px rgba(139, 21, 21, 0.5);
+        }
+
+        .sheet-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .sheet-backdrop.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(253, 251, 247, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 28px 28px 0 0;
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+            z-index: 1002;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+            border-top: 1px solid rgba(230, 216, 179, 0.8);
+        }
+
+        .bottom-sheet.active {
+            transform: translateY(0);
+        }
+
+        .bottom-sheet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 25px 15px;
+            border-bottom: 1px solid rgba(230, 216, 179, 0.4);
+        }
+
+        .bottom-sheet-title {
+            font-size: 1.4rem;
+            color: var(--theme-red);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .close-btn {
+            background: rgba(230, 216, 179, 0.4);
+            border: none;
+            color: var(--theme-red);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover, .close-btn:active {
+            background: var(--theme-red);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .bottom-sheet-content {
+            padding: 20px 25px 30px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Desktop specific positioning for the FAB and Sheet to look natural on large screens */
+        @media screen and (min-width: 768px) {
+            .bottom-sheet {
+                left: 50%;
+                width: 100%;
+                max-width: 600px;
+                transform: translate(-50%, 100%);
+            }
+            .bottom-sheet.active {
+                transform: translate(-50%, 0);
+            }
+            .fab-container {
+                right: max(25px, calc(50vw - 380px)); /* Keeps it nicely aligned next to the reading area */
+            }
+        }
+
 
         /* =========================================
            SCREEN (WEB APP / MOBILE) SPECIFIC LAYOUT 
@@ -346,7 +475,7 @@
                 flex-direction: column;
                 align-items: center;
                 gap: 25px;
-                padding: 75px 12px 40px 12px;
+                padding: 75px 12px 100px 12px; /* Added extra bottom padding so FAB doesn't hide text */
                 max-width: 800px;
                 margin: 0 auto;
             }
@@ -401,7 +530,7 @@
             }
 
             @media (min-width: 768px) {
-                .book-container { padding: 90px 20px 40px 20px; }
+                .book-container { padding: 90px 20px 100px 20px; }
                 .page-inner { margin: 10px; padding: 35px 30px; }
                 .aarti-grid { grid-template-columns: 1fr 1fr; gap: 40px; }
                 .aarti-column:first-child { border-bottom: none; padding-bottom: 0; }
@@ -559,6 +688,46 @@
         <div id="content-pages" style="display: contents;"></div>
     </div>
 
+    <!-- MODAL BACKDROP -->
+    <div class="sheet-backdrop no-print" id="sheet-backdrop"></div>
+
+    <!-- BOTTOM SHEET NAV -->
+    <div class="bottom-sheet no-print" id="bottom-sheet">
+        <div class="bottom-sheet-header">
+            <div class="bottom-sheet-title heading-font">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                </svg>
+                अनुक्रमणिका
+            </div>
+            <button class="close-btn" id="close-sheet" aria-label="Close Index">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="bottom-sheet-content">
+            <ul class="index-list" id="modal-index-list">
+                <!-- JS injects modal index here -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- FLOATING ACTION BUTTON (FAB) -->
+    <div class="fab-container no-print">
+        <button class="fab-btn" id="fab-btn" aria-label="Open Index">
+            <svg width="34" height="34" viewBox="0 0 100 100">
+                <text x="50" y="58" font-family="'Noto Sans Devanagari', sans-serif" font-size="65" fill="currentColor" text-anchor="middle" dominant-baseline="middle" font-weight="700">ॐ</text>
+            </svg>
+        </button>
+    </div>
+
     <script>
         function injectCorners() {
             return `
@@ -628,7 +797,7 @@
                 title: "Hanuman Chalisa",
                 subtitle: "श्री हनुमान चालीसा",
                 isLong: true,
-                devnagari: `॥ दोहा ॥\nश्रीगुरु चरन सरोज रज, निज मनु मुकुरु सुधारि।\nबरनऊँ रघुबर बिमल जसु, जो दायकु फल चारि॥\nबुद्धिहीन तनु जानिके, सुमिरौं पवन-कुमार।\nबल बुधि विद्या देहु मोहिं, हरहु कलेस बिकार॥\n\n॥ चौपाई ॥\nजय हनुमान ज्ञान गुन सागर। जय कपीस तिहुँ लोक उजागर॥\nराम दूत अतुलित बल धामा। अंजनि-पुत्र पवनसुत नामा॥\nमहाबीर बिक्रम बजरंगी। कुमति निवार सुमति के संगी॥\nकंचन बरन बिराज सुबेसा। कानन कुण्डल कुंचित केसा॥\nहाथ बज्र औ ध्वजा बिराजै। काँधे मूँज जनेऊ साजै॥\nशंकर सुवन केसरी नंदन। तेज प्रताप महा जग वंदन॥\nविद्यावान गुनी अति चातुर। राम काज करिबे को आतुर॥\nप्रभु चरित्र सुनिबे को रसिया। राम लखन सीता मन बसिया॥\nसूक्ष्म रूप धरि सियहिं दिखावा। बिकट रूप धरि लंक जरावा॥\nभीम रूप धरि असुर संहारे। रामचंद्र के काज सँवारे॥\nलाय सजीवन लखन जियाए। श्रीरघुबीर हरषि उर लाए॥\nरघुपति कीन्ही बहुत बड़ाई। तुम मम प्रिय भरतहि सम भाई॥\nसहस बदन तुम्हरो जस गावैं। अस कहि श्रीपति कंठ लगावैं॥\nसनकादिक ब्रह्मादि मुनीसा। नारद सारद सहित अहीसा॥\nजम कुबेर दिगपाल जहाँ ते। कवि कोविद कहि सके कहाँ ते॥\nतुम उपकार सुग्रीवहिं कीन्हा। राम मिलाय राज पद दीन्हा॥\nतुम्हरो मंत्र बिभीषण माना। लंकेश्वर भए सब जग जाना॥\nजुग सहस्र योजन पर भानू। लील्यो ताहि मधुर फल जानू॥\nप्रभु मुद्रिका मेलि मुख माहीं। जलधि लाँघि गए अचरज नाहीं॥\nदुर्गम काज जगत के जेते। গুরু अनुग्रह तुम्हरे तेते॥\nराम दुआरे तुम रखवारे। होत न आज्ञा बिनु पैसारे॥\nसब सुख लहै तुम्हारी सरना। तुम रक्षक काहू को डरना॥\nआपन तेज सम्हारो आपै। तीनों लोक हाँक तें काँपै॥\nभूत पिशाच निकट नहिं आवै। महाबीर जब नाम सुनावै॥\nनासै रोग हरै सब पीरा। जपत निरंतर हनुमत बीरा॥\nसंकट तें हनुमान छुड़ावै। मन क्रम वचन ध्यान जो लावै॥\nसब पर राम तपस्वी राजा। तिन के काज सकल तुम साजा॥\nऔर मनोरथ जो कोई लावै। सोइ अमित जीवन फल पावै॥\nचारों जुग परताप तुम्हारा। है परसिद्ध जगत उजियारा॥\nसाधु संत के तुम रखवारे। असुर निकंदन राम दुलारे॥\nअष्ट सिद्धि नौ निधि के दाता। अस बर दीन जानकी माता॥\nराम रसायन तुम्हरे पासा। सदा रहो रघुपति के दासा॥\nतुम्हरे भजन राम को पावै। जनम जनम के दुख बिसरावै॥\nअंतकाल रघुवर पुर जाई। जहाँ जन्म हरि-भक्त कहाई॥\nऔर देवता चित्त न धरई। हनुमत सेइ सर्व सुख करई॥\nसंकट कटै मिटै सब पीरा। जो सुमिरै हनुमत बलबीरा॥\nजय जय जय हनुमान गोसाईं। कृपा करहु गुरुदेव की नाईं॥\nजो सत बार पाठ कर कोई। छूटहि बंदि महा सुख होई॥\nजो यह पढ़ै हनुमान चालीसा। होय सिद्धि साखी गौरीसा॥\nतुलसीदास सदा हरि चेरा। कीजै नाथ हृदय महँ डेरा॥\n\n॥ दोहा ॥\nपवनतनय संकट हरन, मंगल मूरति रूप।\nराम लखन सीता सहित, हृदय बसहु सुर भूप॥`,
+                devnagari: `॥ दोहा ॥\nश्रीगुरु चरन सरोज रज, निज मनु मुकुरु सुधारि।\nबरनऊँ रघुबर बिमल जसु, जो दायकु फल चारि॥\nबुद्धिहीन तनु जानिके, सुमिरौं पवन-कुमार।\nबल बुधि विद्या देहु मोहिं, हरहु कलेस बिकार॥\n\n॥ चौपाई ॥\nजय हनुमान ज्ञान गुन सागर। जय कपीस तिहुँ लोक उजागर॥\nराम दूत अतुलित बल धामा। अंजनि-पुत्र पवनसुत नामा॥\nमहाबीर बिक्रम बजरंगी। कुमति निवार सुमति के संगी॥\nकंचन बरन बिराज सुबेसा। कानन कुण्डल कुंचित केसा॥\nहाथ बज्र औ ध्वजा बिराजै। काँधे मूँज जनेऊ साजै॥\nशंकर सुवन केसरी नंदन। तेज प्रताप महा जग वंदन॥\nविद्यावान गुनी अति चातुर। राम काज करिबे को आतुर॥\nप्रभु चरित्र सुनिबे को रसिया। राम लखन सीता मन बसिया॥\nसूक्ष्म रूप धरि सियहिं दिखावा। बिकट रूप धरि लंक जरावा॥\nभीम रूप धरि असुर संहारे। रामचंद्र के काज सँवारे॥\nलाय सजीवन लखन जियाए। श्रीरघुबीर हरषि उर लाए॥\nरघुपति कीन्ही बहुत बड़ाई। तुम मम प्रिय भरतहि सम भाई॥\nसहस बदन तुम्हरो जस गावैं। अस कहि श्रीपति कंठ लगावैं॥\nसनकादिक ब्रह्मादि मुनीसा। नारद सारद सहित अहीसा॥\nजम कुबेर दिगपाल जहाँ ते। कवि कोविद कहि सके कहाँ ते॥\nतुम उपकार सुग्रीवहिं कीन्हा। राम मिलाय राज पद दीन्हा॥\nतुम्हरो मंत्र बिभीषण माना। लंकेश्वर भए सब जग जाना॥\nजुग सहस्र योजन पर भानू। लील्यो ताहि मधुर फल जानू॥\nप्रभु मुद्रिका मेलि मुख माहीं। जलधि लाँघि गए अचरज नाहीं॥\nदुर्गम काज जगत के जेते। गुरु अनुग्रह तुम्हरे तेते॥\nराम दुआरे तुम रखवारे। होत न आज्ञा बिनु पैसारे॥\nसब सुख लहै तुम्हारी सरना। तुम रक्षक काहू को डरना॥\nआपन तेज सम्हारो आपै। तीनों लोक हाँक तें काँपै॥\nभूत पिशाच निकट नहिं आवै। महाबीर जब नाम सुनावै॥\nनासै रोग हरै सब पीरा। जपत निरंतर हनुमत बीरा॥\nसंकट तें हनुमान छुड़ावै। मन क्रम वचन ध्यान जो लावै॥\nसब पर राम तपस्वी राजा। तिन के काज सकल तुम साजा॥\nऔर मनोरथ जो कोई लावै। सोइ अमित जीवन फल पावै॥\nचारों जुग परताप तुम्हारा। है परसिद्ध जगत उजियारा॥\nसाधु संत के तुम रखवारे। असुर निकंदन राम दुलारे॥\nअष्ट सिद्धि नौ निधि के दाता। अस बर दीन जानकी माता॥\nराम रसायन तुम्हरे पासा। सदा रहो रघुपति के दासा॥\nतुम्हरे भजन राम को पावै। जनम जनम के दुख बिसरावै॥\nअंतकाल रघुवर पुर जाई। जहाँ जन्म हरि-भक्त कहाई॥\nऔर देवता चित्त न धरई। हनुमत सेइ सर्व सुख करई॥\nसंकट कटै मिटै सब पीरा। जो सुमिरै हनुमत बलबीरा॥\nजय जय जय हनुमान गोसाईं। कृपा करहु गुरुदेव की नाईं॥\nजो सत बार पाठ कर कोई। छूटहि बंदि महा सुख होई॥\nजो यह पढ़ै हनुमान चालीसा। होय सिद्धि साखी गौरीसा॥\nतुलसीदास सदा हरि चेरा। कीजै नाथ हृदय महँ डेरा॥\n\n॥ दोहा ॥\nपवनतनय संकट हरन, मंगल मूरति रूप।\nराम लखन सीता सहित, हृदय बसहु सुर भूप॥`,
                 hinglish: `|| Doha ||\nShreeguru charan saroj raj, nij manu mukuru sudhaari |\nBaranau raghubar bimal jasu, jo daayaku phal chaari ||\nBuddhiheen tanu jaanike, sumirau pavan-kumaar |\nBal budhi vidya dehu mohi, harahu kales bikaar ||\n\n|| Chaupai ||\nJai Hanuman gyaan gun saagar | Jai kapees tihun lok ujaagar ||\nRam doot atulit bal dhaama | Anjani-putra pavansut naama ||\nMahabeer bikram bajrangi | Kumati nivaar sumati ke sangi ||\nKanchan baran biraaj subesa | Kaanan kundal kunchit kesa ||\nHaath bajra au dhvaja biraajai | Kaandhe moonj janeu saajai ||\nShankar suvan kesari nandan | Tej prataap maha jag vandan ||\nVidyavaan guni ati chaatur | Ram kaaj karibe ko aatur ||\nPrabhu charitra sunibe ko rasiya | Ram lakhan sita man basiya ||\nSukshma roop dhari siyahi dikhaava | Bikat roop dhari lank jaraava ||\nBheem roop dhari asur sanhaare | Ramachandra ke kaaj sanvaare ||\nLaay sajivan lakhan jiyaaye | Shree raghubeer harashi ur laaye ||\nRaghupati keenhi bahut badhaayi | Tum mam priya bharatahi sam bhaayi ||\nSahas badan tumharo jas gaavai | As kahi shreepati kanth lagaavai ||\nSanakaadik brahmaadi muneesa | Naarad saarad sahit aheesa ||\nJam kuber digpaal jahan te | Kavi kovid kahi sake kahan te ||\nTum upkaar sugreevahin keenha | Ram milaay raaj pad deenha ||\nTumharo mantra bibheeshan maana | Lankeshwar bhaye sab jag jaana ||\nJug sahasra yojan par bhaanoo | Leelyo taahi madhur phal jaanoo ||\nPrabhu mudrika meli mukh maahin | Jaladhi laanghi gaye acharaj naahin ||\nDurgam kaaj jagat ke jete | Sugam anugrah tumhre tete ||\nRam duaare tum rakhvaare | Hot na aagya binu paisaare ||\nSab sukh lahai tumhaari sarna | Tum rakshak kaahu ko darna ||\nAapan tej samhaaro aapai | Teeno lok haank te kaanpai ||\nBhoot pishaach nikat nahin aavai | Mahabeer jab naam sunaavai ||\nNaasai rog harai sab peera | Japat nirantar hanumat beera ||\nSankat te hanuman chhudaavai | Man kram bachan dhyaan jo laavai ||\nSab par ram tapasvee raaja | Tin ke kaaj sakal tum saaja ||\nAur manorath jo koyi laavai | Soyi amit jeevan phal paavai ||\nChaaro jug partaap tumhaara | Hai parsiddh jagat ujiyaara ||\nSaadhu sant ke tum rakhvaare | Asur nikandan ram dulaare ||\nAsht siddhi nau nidhi ke daata | As bar deen jaanki maata ||\nRam rasayan tumhre paasa | Sada raho raghupati ke daasa ||\nTumhre bhajan ram ko paavai | Janam janam ke dukh bisraavai ||\nAntakaal raghuvar pur jaayi | Jahan janm hari-bhakt kahaayi ||\nAur devata chitt na dharayi | Hanumat seyi sarv sukh karayi ||\nSankat katai mitai sab peera | Jo sumirai hanumat balbeera ||\nJai jai jai hanuman gosaayi | Kripa karahu gurudev ki naayi ||\nJo sat baar paath kar koyi | Chhootahi bandi maha sukh hoyi ||\nJo yah padhai hanuman chaleesa | Hoy siddhi saakhi gaureesa ||\nTulsidaas sada hari chera | Keejai naath hriday mahan dera ||\n\n|| Doha ||\nPavantanay sankat haran, mangal moorati roop |\nRam lakhan sita sahit, hriday basahu sur bhoop ||`
             },
             {
@@ -646,13 +815,14 @@
         ];
 
         const indexList = document.getElementById('index-list');
+        const modalIndexList = document.getElementById('modal-index-list');
         const contentPages = document.getElementById('content-pages');
 
         aartis.forEach((aarti, index) => {
             let pageNum = index + 1;
             let id = `aarti-${pageNum}`;
 
-            // Generate App-like Index
+            // 1. Generate Main Page Index
             let li = document.createElement('li');
             li.className = 'index-item';
             li.style.animation = `pageEntrance 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) ${index * 0.05}s both`;
@@ -667,9 +837,23 @@
             `;
             indexList.appendChild(li);
 
+            // 2. Generate Modal Bottom Sheet Index
+            let modalLi = document.createElement('li');
+            modalLi.className = 'index-item';
+            modalLi.innerHTML = `
+                <a href="#${id}" onclick="closeBottomSheet()">
+                    <div>
+                        <div class="index-name">${aarti.title}</div>
+                        <div class="index-hin devnagari">${aarti.subtitle}</div>
+                    </div>
+                    <div class="index-pg">${pageNum}</div>
+                </a>
+            `;
+            modalIndexList.appendChild(modalLi);
+
             let layoutClass = aarti.isLong ? 'long-aarti' : '';
 
-            // Generate Page Content
+            // 3. Generate Page Content
             let div = document.createElement('div');
             div.className = `page ${layoutClass}`;
             div.id = id;
@@ -715,6 +899,35 @@
             `;
             contentPages.appendChild(div);
         });
+
+        // ==========================================
+        // FAB & Bottom Sheet Navigation Logic
+        // ==========================================
+        const fabBtn = document.getElementById('fab-btn');
+        const bottomSheet = document.getElementById('bottom-sheet');
+        const sheetBackdrop = document.getElementById('sheet-backdrop');
+        const closeSheetBtn = document.getElementById('close-sheet');
+
+        function openBottomSheet() {
+            bottomSheet.classList.add('active');
+            sheetBackdrop.classList.add('active');
+            // Prevent body from scrolling while menu is open
+            document.body.style.overflow = 'hidden'; 
+        }
+
+        function closeBottomSheet() {
+            bottomSheet.classList.remove('active');
+            sheetBackdrop.classList.remove('active');
+            // Restore normal body scroll
+            document.body.style.overflow = '';
+        }
+
+        // Event Listeners
+        fabBtn.addEventListener('click', openBottomSheet);
+        closeSheetBtn.addEventListener('click', closeBottomSheet);
+        // Clicking outside the modal closes it
+        sheetBackdrop.addEventListener('click', closeBottomSheet); 
+
     </script>
 </body>
 </html>
